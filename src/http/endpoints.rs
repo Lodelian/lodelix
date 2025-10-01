@@ -1,6 +1,8 @@
 use crate::http::{empty, full};
 use http_body_util::combinators::BoxBody;
 use hyper::body::Bytes;
+use hyper::header::HeaderValue;
+use hyper::http::response::Builder;
 use hyper::{Response, StatusCode};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -11,6 +13,13 @@ struct Status {
     uptime: u64,
 }
 
+#[derive(Serialize, Deserialize)]
+struct Root {
+    config: (),
+    status: Status,
+    _links: (),
+}
+
 fn _get_status() -> Status {
     return Status {
         version: env!("CARGO_PKG_VERSION").to_string(),
@@ -18,37 +27,35 @@ fn _get_status() -> Status {
     };
 }
 
+fn _get_root() -> Root {
+    return Root {
+        config: (),
+        status: _get_status(),
+        _links: (),
+    };
+}
+
+fn _make_response() -> Builder {
+    Response::builder()
+        .header("Content-Type", HeaderValue::from_static("application/json"))
+        .header("X-Powered-By", HeaderValue::from_static("Lodelix"))
+        .header(
+            "X-App-Version",
+            HeaderValue::from_static(env!("CARGO_PKG_VERSION")),
+        )
+}
+
 pub async fn get_root() -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
-    let response = Response::builder()
+    let response = _make_response()
         .status(StatusCode::OK)
-        .body(full(
-            json!({
-                "config": {},
-                "status": {
-                    "version": env!("CARGO_PKG_VERSION"),
-                    "uptime": 0
-                },
-                "_links": {
-                    "self": {
-                        "href": "/"
-                    },
-                    "certificates": {
-                        "href": "/certificates"
-                    },
-                    "status": {
-                        "href": "/status"
-                    }
-                }
-            })
-            .to_string(),
-        ))
+        .body(full(serde_json::to_vec(&_get_root()).unwrap()))
         .unwrap();
 
     Ok(response)
 }
 
 pub async fn get_certificates() -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
-    let response = Response::builder()
+    let response = _make_response()
         .status(StatusCode::OK)
         .body(full(json!({}).to_string()))
         .unwrap();
@@ -59,7 +66,7 @@ pub async fn get_certificates() -> Result<Response<BoxBody<Bytes, hyper::Error>>
 pub async fn get_status() -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
     let status: Status = _get_status();
 
-    let response = Response::builder()
+    let response = _make_response()
         .status(StatusCode::OK)
         .body(full(serde_json::to_vec(&status).unwrap()))
         .unwrap();
@@ -68,7 +75,7 @@ pub async fn get_status() -> Result<Response<BoxBody<Bytes, hyper::Error>>, hype
 }
 
 pub async fn not_found() -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
-    let response = Response::builder()
+    let response = _make_response()
         .status(StatusCode::NOT_FOUND)
         .body(empty())
         .unwrap();

@@ -7,6 +7,7 @@ use hyper::{Method, Request, Response};
 pub mod endpoints;
 pub mod server;
 
+
 pub(crate) fn empty() -> BoxBody<Bytes, hyper::Error> {
     Empty::<Bytes>::new()
         .map_err(|never| match never {})
