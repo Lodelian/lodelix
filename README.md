@@ -1,12 +1,19 @@
 # Lodelix
 
-A rust-written web applications server.
+
+
+## About
+
+Lodelix is a Rust-written web application server that allows you to use language modules to run your projects and also
+provides a flexible configuration system that makes it modern and convenient.
+
+## KEY FEATURE
+
+First web server that provides MCP Server to control it.
 
 ## Features
 
-- Configuration via RESTful API
-- Configuration via gRPC
-- Configuration via AI agents
+- Configuration via RESTful API, gRPC, AI agents
 
 ## Build
 

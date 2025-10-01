@@ -1,4 +1,4 @@
-use crate::http::endpoints::{not_found, status};
+use crate::http::endpoints::{get_certificates, get_root, get_status, not_found};
 use http_body_util::combinators::BoxBody;
 use http_body_util::{BodyExt, Empty, Full};
 use hyper::body::{Bytes, Incoming};
@@ -23,7 +23,9 @@ async fn router(
     req: Request<Incoming>,
 ) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
     match (req.method(), req.uri().path()) {
-        (&Method::GET, "/status") => status().await,
+        (&Method::GET, "/") => get_root().await,
+        (&Method::GET, "/certificates") => get_certificates().await,
+        (&Method::GET, "/status") => get_status().await,
         _ => not_found().await,
     }
 }
