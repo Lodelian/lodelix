@@ -1,15 +1,20 @@
-use crate::config::{PIPE_NAME, PORT};
+#[cfg(windows)]
+use {crate::config::PIPE_NAME, tokio::net::windows::named_pipe::ServerOptions};
+
+#[cfg(unix)]
+use {crate::config::UNIX_SOCKET, tokio::net::UnixSocket};
+
+use crate::config::PORT;
 use crate::http::router;
 use hyper::server::conn::http1;
 use hyper::service::service_fn;
 use hyper_util::rt::TokioIo;
+use std::fs;
 use std::net::SocketAddr;
+use std::path::Path;
 use tokio::net::TcpListener;
+
 use tracing::{error, info};
-
-use tokio::net::windows::named_pipe::{ServerOptions};
-
-
 
 pub async fn serve() {
     info!("Starting server...");
@@ -17,10 +22,13 @@ pub async fn serve() {
     let addr = SocketAddr::from(([0, 0, 0, 0], PORT));
     let listener = TcpListener::bind(addr).await.expect("failed to bind");
 
-    info!("Server started on http://{}", addr);
-
     #[cfg(windows)]
     run_named_pipe().await;
+
+    #[cfg(unix)]
+    run_unix_socket().await;
+
+    info!("Server started on http://{}", addr);
 
     loop {
         let (stream, _) = listener.accept().await.unwrap();
@@ -38,12 +46,25 @@ pub async fn serve() {
     }
 }
 
+#[cfg(windows)]
 async fn run_named_pipe() {
-
     let pipe = ServerOptions::new().create(PIPE_NAME).unwrap();
 
     info!("Named pipe lodelix started");
 
     // Wait for a client to connect.
     pipe.connect().await.expect("TODO: panic message");
+}
+
+#[cfg(unix)]
+async fn run_unix_socket() {
+    if Path::exists(UNIX_SOCKET.as_ref()) {
+        fs::remove_file(UNIX_SOCKET).unwrap();
+    }
+
+    let socket: UnixSocket = UnixSocket::new_stream().unwrap();
+
+    socket.bind(UNIX_SOCKET).expect("TODO: panic message");
+
+    info!("Unix socket lodelix started");
 }
