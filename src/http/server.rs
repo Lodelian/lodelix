@@ -2,16 +2,18 @@
 use {crate::config::PIPE_NAME, tokio::net::windows::named_pipe::ServerOptions};
 
 #[cfg(unix)]
-use {crate::config::UNIX_SOCKET, tokio::net::UnixSocket};
+use {
+    crate::config::UNIX_SOCKET,
+    std::{fs, path::Path},
+    tokio::net::UnixSocket,
+};
 
 use crate::config::PORT;
 use crate::http::router;
 use hyper::server::conn::http1;
 use hyper::service::service_fn;
 use hyper_util::rt::TokioIo;
-use std::fs;
 use std::net::SocketAddr;
-use std::path::Path;
 use tokio::net::TcpListener;
 
 use tracing::{error, info};
@@ -23,7 +25,7 @@ pub async fn serve() {
     let listener = TcpListener::bind(addr).await.expect("failed to bind");
 
     #[cfg(windows)]
-    run_named_pipe().await;
+    run_named_pipe();
 
     #[cfg(unix)]
     run_unix_socket().await;
