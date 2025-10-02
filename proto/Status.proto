@@ -1,0 +1,13 @@
+syntax = "proto3";
+package status;
+
+service StatusService {
+  rpc Status(StatusRequest) returns (StatusResponse) {}
+}
+
+message StatusRequest {}
+
+message StatusResponse {
+  string version = 1;
+  int32 uptime = 2;
+}
