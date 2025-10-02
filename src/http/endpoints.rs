@@ -1,24 +1,11 @@
+use crate::http::types::{Root, Status};
 use crate::http::{empty, full};
 use http_body_util::combinators::BoxBody;
 use hyper::body::Bytes;
 use hyper::header::HeaderValue;
 use hyper::http::response::Builder;
 use hyper::{Response, StatusCode};
-use serde::{Deserialize, Serialize};
 use serde_json::json;
-
-#[derive(Serialize, Deserialize)]
-struct Status {
-    version: String,
-    uptime: u64,
-}
-
-#[derive(Serialize, Deserialize)]
-struct Root {
-    config: (),
-    status: Status,
-    _links: (),
-}
 
 fn _get_status() -> Status {
     return Status {
@@ -49,6 +36,15 @@ pub async fn get_root() -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper:
     let response = _make_response()
         .status(StatusCode::OK)
         .body(full(serde_json::to_vec(&_get_root()).unwrap()))
+        .unwrap();
+
+    Ok(response)
+}
+
+pub async fn get_config() -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
+    let response = _make_response()
+        .status(StatusCode::OK)
+        .body(full(json!({}).to_string()))
         .unwrap();
 
     Ok(response)

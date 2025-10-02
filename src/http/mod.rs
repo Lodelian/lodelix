@@ -1,4 +1,4 @@
-use crate::http::endpoints::{get_certificates, get_root, get_status, not_found};
+use crate::http::endpoints::{get_certificates, get_config, get_root, get_status, not_found};
 use http_body_util::combinators::BoxBody;
 use http_body_util::{BodyExt, Empty, Full};
 use hyper::body::{Bytes, Incoming};
@@ -6,7 +6,7 @@ use hyper::{Method, Request, Response};
 
 pub mod endpoints;
 pub mod server;
-
+pub mod types;
 
 pub(crate) fn empty() -> BoxBody<Bytes, hyper::Error> {
     Empty::<Bytes>::new()
@@ -25,6 +25,7 @@ async fn router(
 ) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
     match (req.method(), req.uri().path()) {
         (&Method::GET, "/") => get_root().await,
+        (&Method::GET, "/config") => get_config().await,
         (&Method::GET, "/certificates") => get_certificates().await,
         (&Method::GET, "/status") => get_status().await,
         _ => not_found().await,

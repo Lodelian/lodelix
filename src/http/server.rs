@@ -54,7 +54,7 @@ struct Args {
     ///
     /// Examples:
     ///   - IPv4: 127.0.0.1:8080
-    ///   - IPv6: [::1]:8080
+    ///   - IPv6: ::1:8080
     ///   - Unix: unix:/path/to/control.unit.sock
     #[arg(long, value_name = "ADDRESS")]
     control: Option<ControlAddress>,
@@ -65,9 +65,10 @@ pub async fn serve() {
 
     info!("Starting server...");
 
-    if let Some(control) = args.control {
+    if let Some(ref control) = args.control {
         match control {
             ControlAddress::Tcp(addr) => {
+
                 info!("Control API socket address: {}", addr);
             }
             ControlAddress::Unix(path) => {
@@ -76,14 +77,14 @@ pub async fn serve() {
         }
     }
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], PORT));
-    let listener = TcpListener::bind(addr).await.expect("failed to bind");
-
     #[cfg(windows)]
     run_named_pipe();
 
     #[cfg(unix)]
     run_unix_socket().await;
+
+    let addr = SocketAddr::from(([0, 0, 0, 0], PORT));
+    let listener = TcpListener::bind(addr).await.expect("failed to bind");
 
     info!("Server started on http://{}", addr);
 
@@ -102,6 +103,7 @@ pub async fn serve() {
         });
     }
 }
+
 
 #[cfg(windows)]
 async fn run_named_pipe() {
