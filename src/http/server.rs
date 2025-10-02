@@ -15,8 +15,10 @@ use hyper::service::service_fn;
 use hyper_util::rt::TokioIo;
 use std::net::SocketAddr;
 use std::str::FromStr;
+use std::sync::Arc;
 use tokio::net::TcpListener;
 
+use crate::grpc::status::{AppState};
 use clap::Parser;
 use tracing::{error, info};
 
@@ -60,7 +62,7 @@ struct Args {
     control: Option<ControlAddress>,
 }
 
-pub async fn serve() {
+pub async fn serve(state: Arc<AppState>) {
     let args = Args::parse();
 
     info!("Starting server...");
@@ -68,7 +70,6 @@ pub async fn serve() {
     if let Some(ref control) = args.control {
         match control {
             ControlAddress::Tcp(addr) => {
-
                 info!("Control API socket address: {}", addr);
             }
             ControlAddress::Unix(path) => {
@@ -103,7 +104,6 @@ pub async fn serve() {
         });
     }
 }
-
 
 #[cfg(windows)]
 async fn run_named_pipe() {

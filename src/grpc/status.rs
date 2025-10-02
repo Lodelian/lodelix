@@ -35,9 +35,9 @@ impl StatusService for StatusHandler {
     }
 }
 
-pub async fn start_grpc(state: AppState) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn start_grpc(state: Arc<AppState>) -> Result<(), Box<dyn std::error::Error>> {
     let handler = StatusHandler {
-        state: Arc::new(Mutex::new(state)),
+        state: Arc::new(Mutex::new((*state).clone())),
     };
 
     info!("gRPC server started on 0.0.0.0:{}", GRPC_PORT);

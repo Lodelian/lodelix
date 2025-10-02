@@ -8,18 +8,18 @@ use hyper::{Response, StatusCode};
 use serde_json::json;
 
 fn _get_status() -> Status {
-    return Status {
+    Status {
         version: env!("CARGO_PKG_VERSION").to_string(),
         uptime: 0,
-    };
+    }
 }
 
 fn _get_root() -> Root {
-    return Root {
+    Root {
         config: (),
         status: _get_status(),
         _links: (),
-    };
+    }
 }
 
 fn _make_response() -> Builder {
