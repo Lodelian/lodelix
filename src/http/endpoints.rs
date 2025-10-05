@@ -1,3 +1,4 @@
+use crate::core::types::{Config, Listener};
 use crate::http::types::{Root, Status};
 use crate::http::{empty, full};
 use http_body_util::combinators::BoxBody;
@@ -14,9 +15,17 @@ fn _get_status() -> Status {
     }
 }
 
+fn _get_config() -> Config {
+    Config {
+        listeners: None,
+        routes: None,
+        applications: None,
+    }
+}
+
 fn _get_root() -> Root {
     Root {
-        config: (),
+        config: _get_config(),
         status: _get_status(),
         _links: (),
     }
@@ -44,7 +53,7 @@ pub async fn get_root() -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper:
 pub async fn get_config() -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
     let response = _make_response()
         .status(StatusCode::OK)
-        .body(full(json!({}).to_string()))
+        .body(full(serde_json::to_vec(&_get_config()).unwrap()))
         .unwrap();
 
     Ok(response)

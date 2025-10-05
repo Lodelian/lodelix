@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use crate::core::types::Config;
 
 #[derive(Serialize, Deserialize)]
 pub struct Status {
@@ -8,7 +9,7 @@ pub struct Status {
 
 #[derive(Serialize, Deserialize)]
 pub struct Root {
-    pub(crate) config: (),
+    pub(crate) config: Config,
     pub(crate) status: Status,
     pub(crate) _links: (),
 }

@@ -1,0 +1,7 @@
+#!/bin/sh
+
+# Stop on error exit status.
+set -e
+# Stop on uninitialized variable.
+set -u
+

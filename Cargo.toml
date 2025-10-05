@@ -21,6 +21,7 @@ clap = { version = "4.5.48", features = ["derive"] }
 tonic = "0.14.2"
 prost = "0.14.1"
 tonic-prost = "0.14.2"
+log = "0.4.28"
 
 [build-dependencies]
 tonic-prost-build = "0.14.2"

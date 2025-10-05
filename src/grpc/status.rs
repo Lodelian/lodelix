@@ -1,21 +1,12 @@
-use crate::config::GRPC_PORT;
-use crate::grpc::proto::status_service_server::{StatusService, StatusServiceServer};
+use crate::grpc::proto::status_service_server::StatusService;
 use crate::grpc::proto::{StatusRequest, StatusResponse};
-use std::net::SocketAddr;
-use std::sync::Arc;
-use tokio::sync::Mutex;
-use tonic::{Request, Response, Status, transport::Server};
-use tracing::info;
+use crate::grpc::server::StatusHandler;
+use tonic::{Request, Response, Status};
 
 #[derive(Clone)]
 pub struct AppState {
     pub version: String,
     pub start_time: std::time::Instant,
-}
-
-#[derive(Clone)]
-pub struct StatusHandler {
-    state: Arc<Mutex<AppState>>,
 }
 
 #[tonic::async_trait]
@@ -35,19 +26,4 @@ impl StatusService for StatusHandler {
     }
 }
 
-pub async fn start_grpc(state: Arc<AppState>) -> Result<(), Box<dyn std::error::Error>> {
-    let handler = StatusHandler {
-        state: Arc::new(Mutex::new((*state).clone())),
-    };
 
-    info!("gRPC server started on 0.0.0.0:{}", GRPC_PORT);
-
-    let addr: SocketAddr = SocketAddr::from(([0, 0, 0, 0], GRPC_PORT));
-
-    Server::builder()
-        .add_service(StatusServiceServer::new(handler))
-        .serve(addr)
-        .await?;
-
-    Ok(())
-}

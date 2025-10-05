@@ -569,6 +569,7 @@ dependencies = [
  "http-body-util",
  "hyper",
  "hyper-util",
+ "log",
  "prost",
  "serde",
  "serde_json",

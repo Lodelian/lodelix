@@ -5,7 +5,6 @@ use {crate::config::PIPE_NAME, tokio::net::windows::named_pipe::ServerOptions};
 use {
     crate::config::UNIX_SOCKET,
     std::{fs, path::Path},
-    tokio::net::UnixSocket,
 };
 
 use crate::config::PORT;
@@ -16,9 +15,11 @@ use hyper_util::rt::TokioIo;
 use std::net::SocketAddr;
 use std::str::FromStr;
 use std::sync::Arc;
-use tokio::net::TcpListener;
+use tokio::net::{TcpListener, UnixListener};
 
-use crate::grpc::status::{AppState};
+use crate::core::types::Listener;
+use crate::grpc::server::start_grpc_server;
+use crate::grpc::status::AppState;
 use clap::Parser;
 use tracing::{error, info};
 
@@ -60,34 +61,45 @@ struct Args {
     ///   - Unix: unix:/path/to/control.unit.sock
     #[arg(long, value_name = "ADDRESS")]
     control: Option<ControlAddress>,
+
+    /// Enable gRPC API
+    #[arg(long)]
+    grpc: bool,
 }
 
-pub async fn serve(state: Arc<AppState>) {
+pub async fn start_http_server(state: Arc<AppState>) {
     let args = Args::parse();
 
     info!("Starting server...");
 
+    if args.grpc {
+        start_grpc_server(state).await.expect("TODO: panic message");
+    }
+
     if let Some(ref control) = args.control {
         match control {
             ControlAddress::Tcp(addr) => {
-                info!("Control API socket address: {}", addr);
+                handle_tcp_listener(Some(addr.clone())).await;
             }
             ControlAddress::Unix(path) => {
                 info!("Control API unix socket: {}", path);
+                handle_unix_listener(Some(path.clone())).await;
             }
         }
+    } else {
+        handle_tcp_listener(None).await;
     }
 
+    // TODO: fix start on windows
     #[cfg(windows)]
     run_named_pipe();
+}
 
-    #[cfg(unix)]
-    run_unix_socket().await;
+async fn handle_tcp_listener(addr: Option<SocketAddr>) {
+    let addr = addr.unwrap_or(SocketAddr::from(([0, 0, 0, 0], PORT)));
+    let listener = TcpListener::bind(addr).await.unwrap();
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], PORT));
-    let listener = TcpListener::bind(addr).await.expect("failed to bind");
-
-    info!("Server started on http://{}", addr);
+    info!("Server started at http://0.0.0.0:{}", addr.port());
 
     loop {
         let (stream, _) = listener.accept().await.unwrap();
@@ -116,14 +128,28 @@ async fn run_named_pipe() {
 }
 
 #[cfg(unix)]
-async fn run_unix_socket() {
-    if Path::exists(UNIX_SOCKET.as_ref()) {
-        fs::remove_file(UNIX_SOCKET).unwrap();
+async fn handle_unix_listener(path: Option<String>) {
+    let path: String = path.unwrap_or(UNIX_SOCKET.to_string());
+
+    if Path::exists(path.as_ref()) {
+        fs::remove_file(path.to_string()).unwrap();
     }
 
-    let socket: UnixSocket = UnixSocket::new_stream().unwrap();
+    let socket: UnixListener = UnixListener::bind(path).expect("TODO: panic message");
 
-    socket.bind(UNIX_SOCKET).expect("TODO: panic message");
+    // TODO: fix Error serving connection: hyper::Error(Shutdown, Os { code: 57, kind: NotConnected, message: "Socket is not connected" })
 
-    info!("Unix socket lodelix started");
+    loop {
+        let (stream, _) = socket.accept().await.unwrap();
+        let io = TokioIo::new(stream);
+
+        tokio::spawn(async move {
+            if let Err(err) = http1::Builder::new()
+                .serve_connection(io, service_fn(router))
+                .await
+            {
+                error!("Error serving connection: {:?}", err);
+            }
+        });
+    }
 }

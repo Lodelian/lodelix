@@ -1,8 +1,9 @@
 /*
  * Copyright (C) Pavel Zavadski
  */
+use crate::grpc::server::start_grpc_server;
+use crate::http::server::start_http_server;
 use std::sync::Arc;
-use crate::http::server::serve;
 use tracing_subscriber::fmt;
 
 mod config;
@@ -10,7 +11,7 @@ mod core;
 mod grpc;
 mod http;
 
-use crate::grpc::status::{AppState, start_grpc};
+use crate::grpc::status::AppState;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -25,13 +26,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let grpc_state = state.clone();
 
     let http = tokio::spawn(async {
-        serve(http_state).await;
-    });
+        start_http_server(http_state).await;
+    }).await;
 
-    let grpc = tokio::spawn(async {
-        start_grpc(grpc_state).await.unwrap();
-    });
+    // TODO: make this configurable
+    // let grpc = tokio::spawn(async {
+    //     start_grpc_server(grpc_state).await.unwrap();
+    // });
 
-    tokio::try_join!(http, grpc)?;
+    // tokio::try_join!(http, grpc)?;
     Ok(())
 }
