@@ -8,6 +8,8 @@ pub struct Listener {
 
 #[derive(Serialize, Deserialize)]
 pub struct Config {
+    pub test: String,
+    
     pub listeners: Option<HashMap<String, Listener>>,
 
     pub routes: Option<String>,

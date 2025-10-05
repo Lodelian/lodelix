@@ -1,4 +1,6 @@
-use crate::http::endpoints::{get_certificates, get_config, get_root, get_status, not_found};
+use crate::http::endpoints::{
+    get_certificates, get_config, get_root, get_status, not_found, update_config,
+};
 use http_body_util::combinators::BoxBody;
 use http_body_util::{BodyExt, Empty, Full};
 use hyper::body::{Bytes, Incoming};
@@ -26,6 +28,7 @@ async fn router(
     match (req.method(), req.uri().path()) {
         (&Method::GET, "/") => get_root().await,
         (&Method::GET, "/config") => get_config().await,
+        (&Method::PUT, "/config") => update_config(req).await,
         (&Method::GET, "/certificates") => get_certificates().await,
         (&Method::GET, "/status") => get_status().await,
         _ => not_found().await,
