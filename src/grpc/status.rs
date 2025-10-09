@@ -3,15 +3,9 @@ use crate::grpc::proto::{StatusRequest, StatusResponse};
 use crate::grpc::server::StatusHandler;
 use tonic::{Request, Response, Status};
 
-#[derive(Clone)]
-pub struct AppState {
-    pub version: String,
-    pub start_time: std::time::Instant,
-}
-
 #[tonic::async_trait]
 impl StatusService for StatusHandler {
-    async fn status(
+    async fn get_status(
         &self,
         _request: Request<StatusRequest>,
     ) -> Result<Response<StatusResponse>, Status> {
@@ -25,5 +19,3 @@ impl StatusService for StatusHandler {
         Ok(Response::new(reply))
     }
 }
-
-

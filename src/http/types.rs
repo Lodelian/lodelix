@@ -8,13 +8,6 @@ pub struct Status {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct Root {
-    pub(crate) config: Config,
-    pub(crate) status: Status,
-    pub(crate) _links: (),
-}
-
-#[derive(Serialize, Deserialize)]
 pub struct ErrorMessage {
     pub(crate) message: String,
 }

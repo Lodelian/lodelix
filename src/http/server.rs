@@ -17,9 +17,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 use tokio::net::{TcpListener, UnixListener};
 
-use crate::core::types::Listener;
-use crate::grpc::server::start_grpc_server;
-use crate::grpc::status::AppState;
+use crate::core::types::AppState;
 use clap::Parser;
 use tracing::{error, info};
 
@@ -27,6 +25,7 @@ use tracing::{error, info};
 enum ControlAddress {
     Tcp(SocketAddr),
     Unix(String),
+    NamedPipe(String),
 }
 
 impl FromStr for ControlAddress {
@@ -40,6 +39,14 @@ impl FromStr for ControlAddress {
                 return Err("Unix socket path cannot be empty".to_string());
             }
             return Ok(ControlAddress::Unix(path.to_string()));
+        }
+
+        if s.starts_with("pipe:") {
+            let path = s.strip_prefix("pipe:").unwrap();
+            if path.is_empty() {
+                return Err("Pipe path cannot be empty".to_string());
+            }
+            return Ok(ControlAddress::NamedPipe(path.to_string()));
         }
 
         // Try to parse as SocketAddr (IPv4 or IPv6)
@@ -61,10 +68,6 @@ struct Args {
     ///   - Unix: unix:/path/to/control.unit.sock
     #[arg(long, value_name = "ADDRESS")]
     control: Option<ControlAddress>,
-
-    /// Enable gRPC API
-    #[arg(long)]
-    grpc: bool,
 }
 
 pub async fn start_http_server(state: Arc<AppState>) {
@@ -72,27 +75,29 @@ pub async fn start_http_server(state: Arc<AppState>) {
 
     info!("Starting server...");
 
-    if args.grpc {
-        start_grpc_server(state).await.expect("TODO: panic message");
-    }
-
     if let Some(ref control) = args.control {
         match control {
             ControlAddress::Tcp(addr) => {
                 handle_tcp_listener(Some(addr.clone())).await;
             }
             ControlAddress::Unix(path) => {
-                info!("Control API unix socket: {}", path);
-                handle_unix_listener(Some(path.clone())).await;
+                #[cfg(unix)]
+                {
+                    info!("Control API unix socket: {}", path);
+                    handle_unix_listener(Some(path.clone())).await;
+                }
+            }
+            ControlAddress::NamedPipe(path) => {
+                #[cfg(windows)]
+                {
+                    info!("Control API named pipe: {}", path);
+                    handle_named_pipe().await;
+                }
             }
         }
     } else {
         handle_tcp_listener(None).await;
     }
-
-    // TODO: fix start on windows
-    #[cfg(windows)]
-    run_named_pipe();
 }
 
 async fn handle_tcp_listener(addr: Option<SocketAddr>) {
@@ -118,7 +123,7 @@ async fn handle_tcp_listener(addr: Option<SocketAddr>) {
 }
 
 #[cfg(windows)]
-async fn run_named_pipe() {
+async fn handle_named_pipe() {
     let pipe = ServerOptions::new().create(PIPE_NAME).unwrap();
 
     info!("Named pipe lodelix started");

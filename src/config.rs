@@ -8,4 +8,4 @@ pub const UNIX_SOCKET: &str = "/tmp/lodelix.sock";
 
 pub const GRPC_PORT: u16 = 50051;
 
-pub const GRPC_ENABLED: bool = false;
+pub const GRPC_ENABLED: bool = true;

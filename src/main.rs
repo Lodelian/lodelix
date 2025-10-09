@@ -1,9 +1,10 @@
 /*
  * Copyright (C) Pavel Zavadski
  */
-use crate::grpc::server::start_grpc_server;
+use crate::config::GRPC_ENABLED;
 use crate::http::server::start_http_server;
 use std::sync::Arc;
+use tracing::info;
 use tracing_subscriber::fmt;
 
 mod config;
@@ -11,7 +12,8 @@ mod core;
 mod grpc;
 mod http;
 
-use crate::grpc::status::AppState;
+use crate::core::types::AppState;
+use crate::grpc::server::start_grpc_server;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -25,15 +27,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let http_state = state.clone();
     let grpc_state = state.clone();
 
-    let http = tokio::spawn(async {
+    info!("Starting server...");
+
+    let http = tokio::spawn(async move {
         start_http_server(http_state).await;
-    }).await;
+    });
 
-    // TODO: make this configurable
-    // let grpc = tokio::spawn(async {
-    //     start_grpc_server(grpc_state).await.unwrap();
-    // });
+    if GRPC_ENABLED {
+        let grpc = tokio::spawn(async move {
+            if let Err(e) = start_grpc_server(grpc_state).await {
+                tracing::error!("gRPC server error: {}", e);
+            }
+        });
+        tokio::try_join!(http, grpc)?;
+    } else {
+        http.await?;
+    }
 
-    // tokio::try_join!(http, grpc)?;
     Ok(())
 }

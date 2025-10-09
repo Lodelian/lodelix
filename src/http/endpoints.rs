@@ -1,5 +1,5 @@
-use crate::core::types::{Config, Listener};
-use crate::http::types::{ErrorMessage, Root, Status};
+use crate::core::types::{Config, Root};
+use crate::http::types::{ErrorMessage, Status};
 use crate::http::{empty, full};
 use http_body_util::BodyExt;
 use http_body_util::combinators::BoxBody;
@@ -8,7 +8,7 @@ use hyper::body::Incoming;
 use hyper::header::HeaderValue;
 use hyper::http::response::Builder;
 use hyper::{Request, Response, StatusCode};
-use log::{debug, info};
+use log::info;
 use serde_json::json;
 
 fn _get_status() -> Status {
@@ -31,7 +31,6 @@ fn _get_root() -> Root {
     Root {
         config: _get_config(),
         status: _get_status(),
-        _links: (),
     }
 }
 

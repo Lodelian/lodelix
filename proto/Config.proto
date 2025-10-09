@@ -1,0 +1,19 @@
+syntax = "proto3";
+package config;
+
+service ConfigService {
+  rpc GetConfig(ConfigRequest) returns (ConfigResponse) {}
+}
+
+message ConfigRequest {}
+
+message Listener {
+  string pass = 1;
+}
+
+message ConfigResponse {
+  string test = 1;
+  map<string, Listener> listeners = 2;
+  string routes = 3;
+  string applications = 4;
+}

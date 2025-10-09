@@ -1,6 +1,7 @@
 use crate::config::GRPC_PORT;
+use crate::core::types::AppState;
+use crate::grpc::proto::config_service_server::ConfigServiceServer;
 use crate::grpc::proto::status_service_server::StatusServiceServer;
-use crate::grpc::status::AppState;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -9,11 +10,20 @@ use tracing::info;
 
 #[derive(Clone)]
 pub struct StatusHandler {
-    pub(crate) state: Arc<Mutex<AppState>>,
+    pub state: Arc<Mutex<AppState>>,
+}
+
+#[derive(Clone)]
+pub struct ConfigHandler {
+    pub state: Arc<Mutex<AppState>>,
 }
 
 pub async fn start_grpc_server(state: Arc<AppState>) -> Result<(), Box<dyn std::error::Error>> {
-    let handler = StatusHandler {
+    let status_handler = StatusHandler {
+        state: Arc::new(Mutex::new((*state).clone())),
+    };
+
+    let config_handler = ConfigHandler {
         state: Arc::new(Mutex::new((*state).clone())),
     };
 
@@ -22,7 +32,8 @@ pub async fn start_grpc_server(state: Arc<AppState>) -> Result<(), Box<dyn std::
     let addr: SocketAddr = SocketAddr::from(([0, 0, 0, 0], GRPC_PORT));
 
     Server::builder()
-        .add_service(StatusServiceServer::new(handler))
+        .add_service(StatusServiceServer::new(status_handler))
+        .add_service(ConfigServiceServer::new(config_handler))
         .serve(addr)
         .await?;
 

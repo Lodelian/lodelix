@@ -1,11 +1,11 @@
 # Lodelix
 
-
-
 ## About
 
 Lodelix is a Rust-written web application server that allows you to use language modules to run your projects and also
 provides a flexible configuration system that makes it modern and convenient.
+
+> This project is still in development. Don't use it in production.
 
 ## KEY FEATURE
 
@@ -22,13 +22,23 @@ First web server that provides MCP Server to control it.
 1. `cargo build`
 2. `cargo run`
 
-### Production
-
-1. `cargo build --release`
-2. `cargo run --release`
-
 ## Roadmap
 
 - [ ] Implement REST API
 - [ ] Implement gRPC
 - [ ] Implement MCP Server
+
+## Lodelix Operation Methods
+
+### HTTP
+
+Can be run
+
+- as a Unix domain socket for Unix-like systems (Linux and MacOS). Default path is `/tmp/lodelix.sock`
+- as a Named Pipe (Windows). Default path is `\\.\pipe\lodelix`
+- on a selected port (Suitable for both). The default port is 9898
+
+### gRPC
+
+Can be run on a selected port. The default port is 50051.
+
