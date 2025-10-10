@@ -74,16 +74,17 @@ struct Args {
 pub async fn start_http_server(state: Arc<AppState>) {
     let args = Args::parse();
 
+    // TODO: fix control arg
     if let Some(ref control) = args.control {
         match control {
             ControlAddress::Tcp(addr) => {
                 handle_tcp_listener(Some(addr.clone()), state).await;
             }
-            ControlAddress::Unix(path) => {
+            ControlAddress::Unix(_path) => {
                 #[cfg(unix)]
                 {
-                    info!("Control API unix socket: {}", path);
-                    handle_unix_listener(Some(path.clone()), state).await;
+                    info!("Control API unix socket: {}", _path);
+                    handle_unix_listener(Some(_path.clone()), state).await;
                 }
             }
             ControlAddress::NamedPipe(_path) => {

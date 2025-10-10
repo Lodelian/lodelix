@@ -8,6 +8,23 @@ pub struct Listener {
     pub pass: String,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct Route {
+    pub routeMatch: Match,
+    pub routeAction: Action
+
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Match {
+    pub uri: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Action {
+    pub share: Option<String>
+}
+
 #[derive(Clone)]
 pub struct AppState {
     pub version: String,
