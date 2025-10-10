@@ -14,18 +14,14 @@ pub struct StatusHandler {
 }
 
 #[derive(Clone)]
-pub struct ConfigHandler {
-    pub state: Arc<Mutex<AppState>>,
-}
+pub struct ConfigHandler {}
 
 pub async fn start_grpc_server(state: Arc<AppState>) -> Result<(), Box<dyn std::error::Error>> {
     let status_handler = StatusHandler {
         state: Arc::new(Mutex::new((*state).clone())),
     };
 
-    let config_handler = ConfigHandler {
-        state: Arc::new(Mutex::new((*state).clone())),
-    };
+    let config_handler = ConfigHandler {};
 
     info!("gRPC server started on 0.0.0.0:{}", GRPC_PORT);
 

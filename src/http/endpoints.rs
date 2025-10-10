@@ -1,4 +1,4 @@
-use crate::core::types::{Config, Root};
+use crate::core::types::{AppState, Config, Root};
 use crate::http::types::{ErrorMessage, Status};
 use crate::http::{empty, full};
 use http_body_util::BodyExt;
@@ -10,6 +10,7 @@ use hyper::http::response::Builder;
 use hyper::{Request, Response, StatusCode};
 use log::info;
 use serde_json::json;
+use std::sync::Arc;
 
 fn _get_status() -> Status {
     Status {
@@ -53,10 +54,14 @@ pub async fn get_root() -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper:
     Ok(response)
 }
 
-pub async fn get_config() -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
+pub async fn get_config(
+    state: Arc<AppState>,
+) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
+    let config = state.config.read().unwrap();
+
     let response = _make_response()
         .status(StatusCode::OK)
-        .body(full(serde_json::to_vec(&_get_config()).unwrap()))
+        .body(full(serde_json::to_vec(&*config).unwrap()))
         .unwrap();
 
     Ok(response)
@@ -75,6 +80,91 @@ pub async fn update_config(
     let response = _make_response()
         .status(StatusCode::OK)
         .body(empty())
+        .unwrap();
+
+    Ok(response)
+}
+
+pub async fn get_listeners(
+    state: Arc<AppState>,
+) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
+    let config = state.config.read().unwrap();
+
+    let response = _make_response()
+        .status(StatusCode::OK)
+        .body(full(serde_json::to_vec(&config.listeners).unwrap()))
+        .unwrap();
+
+    Ok(response)
+}
+
+pub async fn update_listener(
+    req: Request<Incoming>,
+    state: Arc<AppState>,
+    name: &str,
+) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
+    let body = req.collect().await?.to_bytes();
+    let body_string = String::from_utf8_lossy(&body);
+
+    // Parse the listener data from the request body
+    let listener_data = serde_json::from_str(&body_string).unwrap();
+
+    // Get write lock on config
+    let mut config = state.config.write().unwrap();
+
+    // Update the listener
+    if let Some(ref mut listeners) = config.listeners {
+        listeners.insert(name.to_string(), listener_data);
+    }
+
+    let response = _make_response()
+        .status(StatusCode::OK)
+        .body(full(
+            serde_json::to_vec(&json!({"result": "Listener updated"})).unwrap(),
+        ))
+        .unwrap();
+
+    Ok(response)
+}
+
+pub async fn delete_listener(
+    state: Arc<AppState>,
+    name: &str,
+) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
+    let mut config = state.config.write().unwrap();
+    let listeners = config.listeners.as_mut().unwrap();
+
+    listeners.remove(name);
+    let response = _make_response()
+        .status(StatusCode::OK)
+        .body(full(
+            serde_json::to_vec(&json!({"result": "Listener deleted"})).unwrap(),
+        ))
+        .unwrap();
+    Ok(response)
+}
+
+pub async fn get_routes(
+    state: Arc<AppState>,
+) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
+    let config = state.config.read().unwrap();
+
+    let response = _make_response()
+        .status(StatusCode::OK)
+        .body(full(serde_json::to_vec(&config.routes).unwrap()))
+        .unwrap();
+
+    Ok(response)
+}
+
+pub async fn get_applications(
+    state: Arc<AppState>,
+) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
+    let config = state.config.read().unwrap();
+
+    let response = _make_response()
+        .status(StatusCode::OK)
+        .body(full(serde_json::to_vec(&config.applications).unwrap()))
         .unwrap();
 
     Ok(response)
@@ -102,7 +192,7 @@ pub async fn get_status() -> Result<Response<BoxBody<Bytes, hyper::Error>>, hype
 
 pub async fn not_found() -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
     let response = ErrorMessage {
-        message: "Endpoint not found".to_string(),
+        message: "Resource not found".to_string(),
     };
 
     let response = _make_response()

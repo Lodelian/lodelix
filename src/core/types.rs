@@ -1,6 +1,7 @@
 use crate::http::types::Status;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::sync::{Arc, RwLock};
 
 #[derive(Serialize, Deserialize)]
 pub struct Listener {
@@ -11,6 +12,7 @@ pub struct Listener {
 pub struct AppState {
     pub version: String,
     pub start_time: std::time::Instant,
+    pub config: Arc<RwLock<Config>>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -24,6 +26,17 @@ pub struct Config {
     pub test: String,
 
     pub listeners: Option<HashMap<String, Listener>>,
-    pub routes: Option<String>,
-    pub applications: Option<String>,
+    pub routes: Option<HashMap<String, String>>,
+    pub applications: Option<HashMap<String, String>>,
+}
+
+impl Config {
+    pub(crate) fn default() -> Config {
+        Config {
+            test: "".to_string(),
+            listeners: Some(HashMap::new()),
+            routes: Some(HashMap::new()),
+            applications: Some(HashMap::new()),
+        }
+    }
 }

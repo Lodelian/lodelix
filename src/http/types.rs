@@ -1,10 +1,9 @@
-use crate::core::types::Config;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Status {
-    pub(crate) version: String,
-    pub(crate) uptime: u64,
+    pub version: String,
+    pub uptime: u64,
 }
 
 #[derive(Serialize, Deserialize)]

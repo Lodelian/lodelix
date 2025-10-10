@@ -73,34 +73,32 @@ struct Args {
 pub async fn start_http_server(state: Arc<AppState>) {
     let args = Args::parse();
 
-    info!("Starting server...");
-
     if let Some(ref control) = args.control {
         match control {
             ControlAddress::Tcp(addr) => {
-                handle_tcp_listener(Some(addr.clone())).await;
+                handle_tcp_listener(Some(addr.clone()), state).await;
             }
             ControlAddress::Unix(path) => {
                 #[cfg(unix)]
                 {
                     info!("Control API unix socket: {}", path);
-                    handle_unix_listener(Some(path.clone())).await;
+                    handle_unix_listener(Some(path.clone()), state).await;
                 }
             }
-            ControlAddress::NamedPipe(path) => {
+            ControlAddress::NamedPipe(_path) => {
                 #[cfg(windows)]
                 {
-                    info!("Control API named pipe: {}", path);
+                    info!("Control API named pipe: {}", _path);
                     handle_named_pipe().await;
                 }
             }
         }
     } else {
-        handle_tcp_listener(None).await;
+        handle_tcp_listener(None, state).await;
     }
 }
 
-async fn handle_tcp_listener(addr: Option<SocketAddr>) {
+async fn handle_tcp_listener(addr: Option<SocketAddr>, state: Arc<AppState>) {
     let addr = addr.unwrap_or(SocketAddr::from(([0, 0, 0, 0], PORT)));
     let listener = TcpListener::bind(addr).await.unwrap();
 
@@ -108,12 +106,12 @@ async fn handle_tcp_listener(addr: Option<SocketAddr>) {
 
     loop {
         let (stream, _) = listener.accept().await.unwrap();
-
         let io = TokioIo::new(stream);
+        let state = Arc::clone(&state);
 
         tokio::spawn(async move {
             if let Err(err) = http1::Builder::new()
-                .serve_connection(io, service_fn(router))
+                .serve_connection(io, service_fn(move |req| router(req, Arc::clone(&state))))
                 .await
             {
                 error!("Error serving connection: {:?}", err);
@@ -133,7 +131,7 @@ async fn handle_named_pipe() {
 }
 
 #[cfg(unix)]
-async fn handle_unix_listener(path: Option<String>) {
+async fn handle_unix_listener(path: Option<String>, state: Arc<AppState>) {
     let path: String = path.unwrap_or(UNIX_SOCKET.to_string());
 
     if Path::exists(path.as_ref()) {
@@ -147,10 +145,11 @@ async fn handle_unix_listener(path: Option<String>) {
     loop {
         let (stream, _) = socket.accept().await.unwrap();
         let io = TokioIo::new(stream);
+        let state = Arc::clone(&state);
 
         tokio::spawn(async move {
             if let Err(err) = http1::Builder::new()
-                .serve_connection(io, service_fn(router))
+                .serve_connection(io, service_fn(move |req| router(req, Arc::clone(&state))))
                 .await
             {
                 error!("Error serving connection: {:?}", err);
