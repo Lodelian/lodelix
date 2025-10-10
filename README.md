@@ -38,7 +38,10 @@ Can be run
 - as a Named Pipe (Windows). Default path is `\\.\pipe\lodelix`
 - on a selected port (Suitable for both). The default port is 9898
 
+To specify the path or non-default port, use `--control` flag.
+
 ### gRPC
 
+Use `--grpc` flag.
 Can be run on a selected port. The default port is 50051.
 

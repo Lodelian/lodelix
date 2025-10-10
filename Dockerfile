@@ -12,6 +12,6 @@ FROM alpine:latest
 
 COPY --from=builder /usr/src/app/target/release/lodelix /lodelix
 
-EXPOSE 3000
+EXPOSE 9898
 
 CMD ["/lodelix"]
