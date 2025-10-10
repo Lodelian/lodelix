@@ -5,6 +5,7 @@ use {crate::config::PIPE_NAME, tokio::net::windows::named_pipe::ServerOptions};
 use {
     crate::config::UNIX_SOCKET,
     std::{fs, path::Path},
+    tokio::net::UnixListener,
 };
 
 use crate::config::PORT;
@@ -15,7 +16,7 @@ use hyper_util::rt::TokioIo;
 use std::net::SocketAddr;
 use std::str::FromStr;
 use std::sync::Arc;
-use tokio::net::{TcpListener, UnixListener};
+use tokio::net::TcpListener;
 
 use crate::core::types::AppState;
 use clap::Parser;

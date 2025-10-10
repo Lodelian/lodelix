@@ -44,6 +44,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let args = Args::parse();
 
+    // TODO: disable if no grpc build compilation exists. Because build required protoc
     if args.grpc {
         let grpc = tokio::spawn(async move {
             if let Err(e) = start_grpc_server(grpc_state).await {
