@@ -24,7 +24,7 @@ First web server that provides MCP Server to control it.
 
 ## Roadmap
 
-- [ ] Implement REST API
+- [ ] [Implement REST API](https://github.com/Lodelian/lodelix/wiki/Rest-Implementation)
 - [ ] Implement gRPC
 - [ ] Implement MCP Server
 
