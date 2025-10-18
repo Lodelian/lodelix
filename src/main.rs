@@ -34,7 +34,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     let http_state = state.clone();
-    let grpc_state = state.clone();
 
     info!("Starting server...");
 
@@ -42,19 +41,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         start_http_server(http_state).await;
     });
 
-    let args = Args::parse();
+    #[cfg(feature = "grpc")]
+    {
+        let args = Args::parse();
+        let grpc_state = state.clone();
 
-    // TODO: disable if no grpc build compilation exists. Because build required protoc
-    if args.grpc {
-        let grpc = tokio::spawn(async move {
-            if let Err(e) = start_grpc_server(grpc_state).await {
-                tracing::error!("gRPC server error: {}", e);
-            }
-        });
-        tokio::try_join!(http, grpc)?;
-    } else {
-        http.await?;
+        if args.grpc {
+            let grpc = tokio::spawn(async move {
+                if let Err(e) = crate::grpc::server::start_grpc_server(grpc_state).await {
+                    tracing::error!("gRPC server error: {}", e);
+                }
+            });
+            tokio::try_join!(http, grpc)?;
+        } else {
+            http.await?;
+        }
     }
+
+    #[cfg(not(feature = "grpc"))]
+    http.await?;
 
     Ok(())
 }

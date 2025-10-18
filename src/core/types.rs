@@ -10,8 +10,8 @@ pub struct Listener {
 
 #[derive(Serialize, Deserialize)]
 pub struct Route {
-    pub routeMatch: Match,
-    pub routeAction: Action
+    pub route_match: Match,
+    pub route_action: Action
 
 }
 
@@ -40,8 +40,6 @@ pub struct Root {
 
 #[derive(Serialize, Deserialize)]
 pub struct Config {
-    pub test: String,
-
     pub listeners: Option<HashMap<String, Listener>>,
     pub routes: Option<HashMap<String, String>>,
     pub applications: Option<HashMap<String, String>>,
@@ -50,7 +48,6 @@ pub struct Config {
 impl Config {
     pub(crate) fn default() -> Config {
         Config {
-            test: "".to_string(),
             listeners: Some(HashMap::new()),
             routes: Some(HashMap::new()),
             applications: Some(HashMap::new()),
