@@ -1,28 +1,45 @@
-use crate::core::types::AppState;
-use crate::http::endpoints::{
-    delete_listener, get_applications, get_certificates, get_config, get_listeners, get_root,
-    get_routes, get_status, not_found, update_config, update_listener,
+use crate::{
+    core::types::{AppState, Config, Root},
+    http::controllers::application_controller::get_applications,
+    http::controllers::certificate_controller::get_certificates,
+    http::controllers::config_controller::{delete_config, get_config, update_config},
+    http::controllers::listener_controller::{delete_listener, get_listeners, update_listener},
+    http::controllers::route_controller::get_routes,
+    http::controllers::status_controller::get_status,
+    http::types::{ErrorMessage, Status},
 };
 use http_body_util::combinators::BoxBody;
 use http_body_util::{BodyExt, Empty, Full};
 use hyper::body::{Bytes, Incoming};
-use hyper::{Method, Request, Response};
+use hyper::header::HeaderValue;
+use hyper::http::response::Builder;
+use hyper::{Method, Request, Response, StatusCode};
 use std::sync::Arc;
 
-pub mod endpoints;
+mod controllers;
 pub mod server;
 pub mod types;
 
-pub(crate) fn empty() -> BoxBody<Bytes, hyper::Error> {
+pub fn empty() -> BoxBody<Bytes, hyper::Error> {
     Empty::<Bytes>::new()
         .map_err(|never| match never {})
         .boxed()
 }
 
-pub(crate) fn full<T: Into<Bytes>>(chunk: T) -> BoxBody<Bytes, hyper::Error> {
+pub fn full<T: Into<Bytes>>(chunk: T) -> BoxBody<Bytes, hyper::Error> {
     Full::new(chunk.into())
         .map_err(|never| match never {})
         .boxed()
+}
+
+pub fn make_response() -> Builder {
+    Response::builder()
+        .header("Content-Type", HeaderValue::from_static("application/json"))
+        .header("X-Powered-By", HeaderValue::from_static("Lodelix"))
+        .header(
+            "X-App-Version",
+            HeaderValue::from_static(env!("CARGO_PKG_VERSION")),
+        )
 }
 
 async fn router(
@@ -33,9 +50,10 @@ async fn router(
     let path = req.uri().path().to_string();
 
     match (&method, path.as_str()) {
-        (&Method::GET, "/") => get_root().await,
+        (&Method::GET, "/") => get_root(state).await,
         (&Method::GET, "/config") => get_config(state).await,
-        (&Method::PUT, "/config") => update_config(req).await,
+        (&Method::PUT, "/config") => update_config(req, state).await,
+        (&Method::DELETE, "/config") => delete_config(state).await,
         (&Method::GET, "/config/listeners") => get_listeners(state).await,
         (&Method::PUT, path) if path.starts_with("/config/listeners/") => {
             let name = path.trim_start_matches("/config/listeners/");
@@ -51,4 +69,39 @@ async fn router(
         (&Method::GET, "/status") => get_status().await,
         _ => not_found().await,
     }
+}
+
+pub async fn get_root(
+    state: Arc<AppState>,
+) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
+    // TODO: get config from state
+    // let _config = state.config.read().unwrap();
+
+    let root = Root {
+        config: Config::default(),
+        status: Status {
+            version: env!("CARGO_PKG_VERSION").to_string(),
+            uptime: 0,
+        },
+    };
+
+    let response = make_response()
+        .status(StatusCode::OK)
+        .body(full(serde_json::to_vec(&root).unwrap()))
+        .unwrap();
+
+    Ok(response)
+}
+
+async fn not_found() -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
+    let response = ErrorMessage {
+        message: "Resource not found".to_string(),
+    };
+
+    let response = make_response()
+        .status(StatusCode::NOT_FOUND)
+        .body(full(serde_json::to_vec(&response).unwrap()))
+        .unwrap();
+
+    Ok(response)
 }
