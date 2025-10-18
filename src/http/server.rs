@@ -18,66 +18,12 @@ use std::str::FromStr;
 use std::sync::Arc;
 use tokio::net::TcpListener;
 
-use crate::core::types::AppState;
+use crate::core::types::{AppState, ControlAddress};
 use clap::Parser;
 use tracing::{error, info};
 
-#[derive(Debug, Clone)]
-enum ControlAddress {
-    Tcp(SocketAddr),
-    Unix(String),
-    #[cfg(windows)]
-    NamedPipe(String),
-}
-
-impl FromStr for ControlAddress {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // Check for unix socket format
-        if s.starts_with("unix:") {
-            let path = s.strip_prefix("unix:").unwrap();
-            if path.is_empty() {
-                return Err("Unix socket path cannot be empty".to_string());
-            }
-            return Ok(ControlAddress::Unix(path.to_string()));
-        }
-
-        #[cfg(windows)]
-        if s.starts_with("pipe:") {
-            let path = s.strip_prefix("pipe:").unwrap();
-            if path.is_empty() {
-                return Err("Pipe path cannot be empty".to_string());
-            }
-            return Ok(ControlAddress::NamedPipe(path.to_string()));
-        }
-
-        // Try to parse as SocketAddr (IPv4 or IPv6)
-        match s.parse::<SocketAddr>() {
-            Ok(addr) => Ok(ControlAddress::Tcp(addr)),
-            Err(_) => Err("Invalid control address format. Expected: IPv4 (127.0.0.1:8080), IPv6 ([::1]:8080), or Unix (unix:/path/to/socket)".to_string()),
-        }
-    }
-}
-
-#[derive(Parser, Debug)]
-#[command(version, about, long_about = None)]
-struct Args {
-    /// Control API socket address in IPv4, IPv6, or UNIX domain format
-    ///
-    /// Examples:
-    ///   - IPv4: 127.0.0.1:8080
-    ///   - IPv6: ::1:8080
-    ///   - Unix: unix:/path/to/control.unit.sock
-    #[arg(long, value_name = "ADDRESS")]
-    control: Option<ControlAddress>,
-}
-
-pub async fn start_http_server(state: Arc<AppState>) {
-    let args = Args::parse();
-
-    // TODO: fix control arg
-    if let Some(ref control) = args.control {
+pub async fn start_http_server(control: Option<ControlAddress>, state: Arc<AppState>) {
+    if let Some(ref control) = control {
         match control {
             ControlAddress::Tcp(addr) => {
                 handle_tcp_listener(Some(addr.clone()), state).await;
@@ -104,7 +50,7 @@ async fn handle_tcp_listener(addr: Option<SocketAddr>, state: Arc<AppState>) {
     let addr = addr.unwrap_or(SocketAddr::from(([0, 0, 0, 0], PORT)));
     let listener = TcpListener::bind(addr).await.unwrap();
 
-    info!("Server started at http://0.0.0.0:{}", addr.port());
+    info!("HTTP server started at http://0.0.0.0:{}", addr.port());
 
     loop {
         let (stream, _) = listener.accept().await.unwrap();

@@ -3,6 +3,7 @@ use crate::core::types::AppState;
 use crate::grpc::proto::config_service_server::ConfigServiceServer;
 use crate::grpc::proto::status_service_server::StatusServiceServer;
 use std::net::SocketAddr;
+use std::os::macos::raw::stat;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tonic::transport::Server;
@@ -14,14 +15,18 @@ pub struct StatusHandler {
 }
 
 #[derive(Clone)]
-pub struct ConfigHandler {}
+pub struct ConfigHandler {
+    pub state: Arc<AppState>,
+}
 
 pub async fn start_grpc_server(state: Arc<AppState>) -> Result<(), Box<dyn std::error::Error>> {
     let status_handler = StatusHandler {
         state: Arc::new(Mutex::new((*state).clone())),
     };
 
-    let config_handler = ConfigHandler {};
+    let config_handler = ConfigHandler {
+        state: state.clone()
+    };
 
     info!("gRPC server started on 0.0.0.0:{}", GRPC_PORT);
 

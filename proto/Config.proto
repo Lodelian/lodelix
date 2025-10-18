@@ -11,9 +11,12 @@ message Listener {
   string pass = 1;
 }
 
+message Application {
+  string type = 1;
+}
+
 message ConfigResponse {
-  string test = 1;
-  map<string, Listener> listeners = 2;
-  string routes = 3;
-  string applications = 4;
+  map<string, Listener> listeners = 1;
+  string routes = 2;
+  map<string, Application> applications = 3;
 }

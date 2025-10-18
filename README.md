@@ -42,6 +42,8 @@ To specify the path or non-default port, use `--control` flag.
 
 ### gRPC
 
-Use `--grpc` flag.
+build with `--features grpc`
+
+Use `--grpc` flag to enable gRPC.
 Can be run on a selected port. The default port is 50051.
 

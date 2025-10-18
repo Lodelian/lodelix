@@ -1,6 +1,8 @@
 use crate::http::types::Status;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::net::SocketAddr;
+use std::str::FromStr;
 use std::sync::{Arc, RwLock};
 use std::time::SystemTime;
 
@@ -57,6 +59,44 @@ impl Config {
             listeners: Some(HashMap::new()),
             routes: Some(HashMap::new()),
             applications: Some(HashMap::new()),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum ControlAddress {
+    Tcp(SocketAddr),
+    Unix(String),
+    #[cfg(windows)]
+    NamedPipe(String),
+}
+
+impl FromStr for ControlAddress {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // Check for unix socket format
+        if s.starts_with("unix:") {
+            let path = s.strip_prefix("unix:").unwrap();
+            if path.is_empty() {
+                return Err("Unix socket path cannot be empty".to_string());
+            }
+            return Ok(ControlAddress::Unix(path.to_string()));
+        }
+
+        #[cfg(windows)]
+        if s.starts_with("pipe:") {
+            let path = s.strip_prefix("pipe:").unwrap();
+            if path.is_empty() {
+                return Err("Pipe path cannot be empty".to_string());
+            }
+            return Ok(ControlAddress::NamedPipe(path.to_string()));
+        }
+
+        // Try to parse as SocketAddr (IPv4 or IPv6)
+        match s.parse::<SocketAddr>() {
+            Ok(addr) => Ok(ControlAddress::Tcp(addr)),
+            Err(_) => Err("Invalid control address format. Expected: IPv4 (127.0.0.1:8080), IPv6 ([::1]:8080), or Unix (unix:/path/to/socket)".to_string()),
         }
     }
 }
