@@ -20,7 +20,8 @@ First web server that provides MCP Server to control it.
 ### Development
 
 1. `cargo build`
-2. `cargo run`
+    1. 'cargo build --features grpc' to enable gRPC
+2. `./target/debug/lodelix --help`
 
 ## Roadmap
 
