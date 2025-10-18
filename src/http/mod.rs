@@ -1,3 +1,4 @@
+use crate::http::controllers::application_controller::{delete_application, update_application};
 use crate::{
     core::types::{AppState, Config, Root},
     http::controllers::application_controller::get_applications,
@@ -65,8 +66,16 @@ async fn router(
         }
         (&Method::GET, "/config/routes") => get_routes(state).await,
         (&Method::GET, "/config/applications") => get_applications(state).await,
+        (&Method::PUT, path) if path.starts_with("/config/applications/") => {
+            let name = path.trim_start_matches("/config/applications/");
+            update_application(state, name).await
+        }
+        (&Method::DELETE, path) if path.starts_with("/config/applications/") => {
+            let name = path.trim_start_matches("/config/applications/");
+            delete_application(state, name).await
+        }
         (&Method::GET, "/certificates") => get_certificates().await,
-        (&Method::GET, "/status") => get_status().await,
+        (&Method::GET, "/status") => get_status(state).await,
         _ => not_found().await,
     }
 }
@@ -80,8 +89,8 @@ pub async fn get_root(
     let root = Root {
         config: Config::default(),
         status: Status {
-            version: env!("CARGO_PKG_VERSION").to_string(),
-            uptime: 0,
+            version: state.version.clone(),
+            start_time: state.start_time,
         },
     };
 

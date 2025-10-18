@@ -2,6 +2,7 @@ use crate::http::types::Status;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
+use std::time::SystemTime;
 
 #[derive(Serialize, Deserialize)]
 pub struct Listener {
@@ -11,8 +12,7 @@ pub struct Listener {
 #[derive(Serialize, Deserialize)]
 pub struct Route {
     pub route_match: Match,
-    pub route_action: Action
-
+    pub route_action: Action,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -22,13 +22,19 @@ pub struct Match {
 
 #[derive(Serialize, Deserialize)]
 pub struct Action {
-    pub share: Option<String>
+    pub share: Option<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Application {
+    #[serde(rename = "type")]
+    pub type_: String,
 }
 
 #[derive(Clone)]
 pub struct AppState {
     pub version: String,
-    pub start_time: std::time::Instant,
+    pub start_time: SystemTime,
     pub config: Arc<RwLock<Config>>,
 }
 
@@ -41,12 +47,12 @@ pub struct Root {
 #[derive(Serialize, Deserialize)]
 pub struct Config {
     pub listeners: Option<HashMap<String, Listener>>,
-    pub routes: Option<HashMap<String, String>>,
-    pub applications: Option<HashMap<String, String>>,
+    pub routes: Option<HashMap<String, Route>>,
+    pub applications: Option<HashMap<String, Application>>,
 }
 
 impl Config {
-    pub(crate) fn default() -> Config {
+    pub fn default() -> Config {
         Config {
             listeners: Some(HashMap::new()),
             routes: Some(HashMap::new()),

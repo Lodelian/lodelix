@@ -4,6 +4,7 @@
 use crate::http::server::start_http_server;
 use clap::Parser;
 use std::sync::{Arc, RwLock};
+use std::time::SystemTime;
 use tracing::info;
 use tracing_subscriber::fmt;
 
@@ -13,6 +14,8 @@ mod grpc;
 mod http;
 
 use crate::core::types::{AppState, Config};
+
+#[cfg(feature = "grpc")]
 use crate::grpc::server::start_grpc_server;
 
 #[derive(Parser, Debug)]
@@ -29,7 +32,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let state = Arc::new(AppState {
         version: env!("CARGO_PKG_VERSION").to_string(),
-        start_time: std::time::Instant::now(),
+        start_time: SystemTime::now(),
         config: Arc::new(RwLock::new(Config::default())),
     });
 
@@ -48,7 +51,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         if args.grpc {
             let grpc = tokio::spawn(async move {
-                if let Err(e) = crate::grpc::server::start_grpc_server(grpc_state).await {
+                if let Err(e) = start_grpc_server(grpc_state).await {
                     tracing::error!("gRPC server error: {}", e);
                 }
             });

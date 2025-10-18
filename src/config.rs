@@ -6,4 +6,5 @@ pub const PIPE_NAME: &str = r"\\.\pipe\lodelix";
 #[cfg(unix)]
 pub const UNIX_SOCKET: &str = "/tmp/lodelix.sock";
 
+#[cfg(feature = "grpc")]
 pub const GRPC_PORT: u16 = 50051;

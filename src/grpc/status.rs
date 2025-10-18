@@ -13,7 +13,10 @@ impl StatusService for StatusHandler {
 
         let reply = StatusResponse {
             version: state.version.clone(),
-            uptime: state.start_time.elapsed().as_secs() as i32,
+            start_time: state.start_time
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_secs() as i64,
         };
 
         Ok(Response::new(reply))

@@ -1,4 +1,5 @@
 use crate::core::types::AppState;
+use crate::http::types::SuccessMessage;
 use crate::http::{full, make_response};
 use http_body_util::BodyExt;
 use http_body_util::combinators::BoxBody;
@@ -55,13 +56,16 @@ pub async fn delete_listener(
 ) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
     let mut config = state.config.write().unwrap();
     let listeners = config.listeners.as_mut().unwrap();
-
     listeners.remove(name);
+
+    let response = SuccessMessage {
+        message: "Listener deleted".to_string(),
+    };
+
     let response = make_response()
         .status(StatusCode::OK)
-        .body(full(
-            serde_json::to_vec(&json!({"result": "Listener deleted"})).unwrap(),
-        ))
+        .body(full(response))
         .unwrap();
+
     Ok(response)
 }

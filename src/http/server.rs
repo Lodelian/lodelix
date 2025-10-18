@@ -26,6 +26,7 @@ use tracing::{error, info};
 enum ControlAddress {
     Tcp(SocketAddr),
     Unix(String),
+    #[cfg(windows)]
     NamedPipe(String),
 }
 
@@ -42,6 +43,7 @@ impl FromStr for ControlAddress {
             return Ok(ControlAddress::Unix(path.to_string()));
         }
 
+        #[cfg(windows)]
         if s.starts_with("pipe:") {
             let path = s.strip_prefix("pipe:").unwrap();
             if path.is_empty() {
@@ -87,12 +89,10 @@ pub async fn start_http_server(state: Arc<AppState>) {
                     handle_unix_listener(Some(_path.clone()), state).await;
                 }
             }
+            #[cfg(windows)]
             ControlAddress::NamedPipe(_path) => {
-                #[cfg(windows)]
-                {
-                    info!("Control API named pipe: {}", _path);
-                    handle_named_pipe().await;
-                }
+                info!("Control API named pipe: {}", _path);
+                handle_named_pipe().await;
             }
         }
     } else {

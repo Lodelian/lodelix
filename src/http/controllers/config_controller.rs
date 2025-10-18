@@ -1,12 +1,12 @@
-use http_body_util::BodyExt;
-use std::collections::HashMap;
 use crate::core::types::{AppState, Config};
+use crate::http::types::SuccessMessage;
 use crate::http::{full, make_response};
 use http_body_util::combinators::BoxBody;
-use hyper::{Request, Response, StatusCode};
-use std::sync::Arc;
+use http_body_util::BodyExt;
 use hyper::body::{Bytes, Incoming};
-use serde_json::json;
+use hyper::{Request, Response, StatusCode};
+use std::collections::HashMap;
+use std::sync::Arc;
 
 pub async fn get_config(
     state: Arc<AppState>,
@@ -49,11 +49,13 @@ pub async fn delete_config(
     config.routes = Some(HashMap::new());
     config.applications = Some(HashMap::new());
 
+    let response = SuccessMessage {
+        message: "Configuration deleted".to_string(),
+    };
+
     let response = make_response()
         .status(StatusCode::OK)
-        .body(full(
-            serde_json::to_vec(&json!({"message": "Configuration deleted"})).unwrap(),
-        ))
+        .body(full(response))
         .unwrap();
 
     Ok(response)

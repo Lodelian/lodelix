@@ -9,5 +9,5 @@ message StatusRequest {}
 
 message StatusResponse {
   string version = 1;
-  int32 uptime = 2;
+  int64 start_time = 2;
 }
